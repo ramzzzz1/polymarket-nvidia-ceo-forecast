@@ -32,8 +32,11 @@ identical, and a case runs in a fraction of the 8-second cap.
 ## Calibration
 
 The constants were calibrated on the competition's six practice cases, rebuilt from
-Polymarket's public price history and scored with the contest's pinball loss: **0.2998**
+Polymarket's public price history and scored with the contest's pinball loss: **0.2872**
 against the persistence baseline's **0.3636**, better on every one of the six cases.
+A final per-level calibration of each row's spread around its own median is included:
+the upside quantiles of these step prices run systematically wide on the practice cases
+(a spike up is usually given back), while the 5% tail runs narrow.
 
 ## Run
 

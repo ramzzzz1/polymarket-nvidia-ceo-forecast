@@ -21,9 +21,14 @@
 //   5. Horizons between grid points are interpolated in sqrt(h); every row is clamped to
 //      [0, 1], made non-decreasing across the quantile levels and rounded to 6 decimals.
 //
-// The constants above were calibrated on the competition's six practice cases (rebuilt from
+//   6. Finally, each row's spread around its own median is calibrated per quantile level
+//      (TAU_SCALE below): on the practice cases the upside quantiles of these step prices
+//      run systematically wide - a spike up is usually given back - while the 5% tail runs
+//      narrow, so the upper levels are pulled in and the lowest is pushed out.
+//
+// The constants were calibrated on the competition's six practice cases (rebuilt from
 // Polymarket's public price history and scored with the contest's pinball loss): this design
-// scored 0.2998 against the persistence baseline's 0.3636, better on every one of the six.
+// scored 0.2872 against the persistence baseline's 0.3636, better on every one of the six.
 //
 // Everything is a pure function of the case file: two runs on the same case write the same
 // bytes, and a whole case runs in well under the 8-second cap.
@@ -50,6 +55,8 @@ const RECENT_WINDOW = 240;
 const MOVE_WINDOW = 1080;
 /** Weight kept on the empirical median move; the rest of the centre is persistence. */
 const MEDIAN_WEIGHT = 0.3;
+/** Per-level calibration of a row's spread around its own median (practice-fitted). */
+const TAU_SCALE = [1.15, 0.725, 1, 0.55, 0.725];
 
 interface CaseMarket {
   id: string;
@@ -144,6 +151,9 @@ function forecastMarket(prices: number[], horizon: number): number[][] {
       const move = w0 * scaled + (1 - w0) * base;
       row.push(price6(x + move));
     }
+    // Calibrate the spread around the row's own median, per quantile level.
+    const centre = row[2] as number;
+    for (let j = 0; j < row.length; j++) row[j] = price6(centre + ((row[j] as number) - centre) * (TAU_SCALE[j] as number));
     // Enforce the non-decreasing order the format requires.
     for (let j = 1; j < row.length; j++) if ((row[j] as number) < (row[j - 1] as number)) row[j] = row[j - 1] as number;
     rows[h - 1] = row;
